@@ -2245,10 +2245,7 @@ function importCsvText(text){
 function isOpenVisit(v){ return v.status==='Assigned'||v.status==='In Progress'||v.status==='Scheduled'; }
 function myTechFilter(list){
   const sess = window.__session;
-  if(sess && !sess.isAdmin && sess.role==='Technician' && sess.teamMemberId){
-    return list.filter(v=>v.technicianId===sess.teamMemberId);
-  }
-  return list;
+  return list; // all team members see all visits
 }
 function techOptions(){ return state.team.filter(t=>t.role==='Technician'); }
 function populateVisitFilters(){
