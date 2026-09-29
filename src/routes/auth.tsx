@@ -5,6 +5,16 @@ import { needsAdminSetup, createFirstAdmin } from "@/lib/setup.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Login | Flip Power CRM" },
+      { name: "description", content: "Secure login for the Flip Power CRM team workspace." },
+      { property: "og:title", content: "Login | Flip Power CRM" },
+      { property: "og:description", content: "Secure login for the Flip Power CRM team workspace." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session) throw redirect({ to: "/" });
