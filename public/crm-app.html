@@ -2524,6 +2524,14 @@ function renderVisitsDone(){
           </div>
         </div>`;}).join('')}
     </div>`).join('');
+  wrap.querySelectorAll('.vd-proof-btn').forEach(b=> b.addEventListener('click', async ()=>{
+    const v = state.visits.find(x=>x.id===parseInt(b.dataset.id));
+    if(!v || !v.paymentProof) return;
+    try{
+      const blob = await (await fetch(v.paymentProof)).blob();
+      window.open(URL.createObjectURL(blob), '_blank');
+    }catch(e){ toast('Could not open proof image', 'info'); }
+  }));
   wrap.querySelectorAll('.vd-pay-btn').forEach(b=> b.addEventListener('click', ()=>{
     const v = state.visits.find(x=>x.id===parseInt(b.dataset.id));
     const ch = v.finalCharges??v.charges??0;
@@ -4509,6 +4517,7 @@ function compressImageFile(file, maxDim, quality){
 }
 
 let __visitProof = '';
+window.__clearVisitProof = ()=>{ __visitProof = ''; };
 document.addEventListener('change', async (ev)=>{
   if(ev.target && ev.target.id === 'vc-file'){
     const f = ev.target.files && ev.target.files[0];
