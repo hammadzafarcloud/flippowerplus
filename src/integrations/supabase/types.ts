@@ -112,6 +112,39 @@ export type Database = {
           },
         ]
       }
+      team_accounts: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string
+          owner_id: string
+          permissions: Json
+          role: string
+          team_member_id: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email: string
+          owner_id: string
+          permissions?: Json
+          role?: string
+          team_member_id?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string
+          owner_id?: string
+          permissions?: Json
+          role?: string
+          team_member_id?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_kv: {
         Row: {
           key: string
@@ -138,7 +171,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      workspace_owner: { Args: { _uid: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
