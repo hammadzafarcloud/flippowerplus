@@ -1091,6 +1091,7 @@ tbody tr:hover{background:var(--paper-2);}
   <div class="modal-body">
     <div class="field-grid">
       <div class="field" style="grid-column:1/-1;"><label>Client / Lead</label><select id="v-lead"></select></div>
+      <div class="field" id="v-manual-wrap" style="grid-column:1/-1;display:none;"><label>Client name</label><input id="v-manual-name" placeholder="Name of the person who contacted you (e.g. via WhatsApp)"></div>
       <div class="field"><label>Visit date</label><input id="v-date" type="date"></div>
       <div class="field"><label>Time</label><input id="v-time" type="time" value="11:00"></div>
       <div class="field"><label>Technician</label><select id="v-tech"></select></div>
@@ -2252,7 +2253,7 @@ function populateVisitFilters(){
   const cur = tech.value;
   tech.innerHTML = '<option value="">All technicians</option>' + opts; tech.value = cur;
   const vLead = document.getElementById('v-lead');
-  vLead.innerHTML = state.leads.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} — ${escapeHtml(l.area||'—')}</option>`).join('');
+  vLead.innerHTML = '<option value="manual">— New client (not in leads) —</option>' + state.leads.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} — ${escapeHtml(l.area||'—')}</option>`).join('');
   document.getElementById('v-tech').innerHTML = '<option value="">— Unassigned —</option>' + opts;
   document.getElementById('v-service-list').innerHTML = (state.settings.services||[]).map(x=>`<option value="${escapeHtml(x)}">`).join('');
 }
