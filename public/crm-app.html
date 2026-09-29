@@ -2338,7 +2338,11 @@ document.getElementById('filter-visit-tech').addEventListener('change', renderVi
 let visitLockedLead = null, editingVisitId = null;
 function fillVisitFromLead(){
   if(editingVisitId) return;
-  const l = state.leads.find(x=>x.id===parseInt(document.getElementById('v-lead').value));
+  const sel = document.getElementById('v-lead').value;
+  const manual = sel==='manual';
+  document.getElementById('v-manual-wrap').style.display = manual?'':'none';
+  if(manual){ document.getElementById('v-phone').value=''; document.getElementById('v-address').value=''; return; }
+  const l = state.leads.find(x=>x.id===parseInt(sel));
   if(!l) return;
   document.getElementById('v-phone').value = l.phone||'';
   document.getElementById('v-address').value = l.area||'';
