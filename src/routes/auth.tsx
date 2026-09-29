@@ -17,8 +17,10 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [setup, setSetup] = useState(false);
 
   useEffect(() => {
+    needsAdminSetup().then((r) => setSetup(r.needed)).catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) navigate({ to: "/" });
     });
@@ -30,8 +32,9 @@ function AuthPage() {
     setErr(null);
     setBusy(true);
     try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+      if (setup) await createFirstAdmin({ data: { email, password } });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
     } finally {
