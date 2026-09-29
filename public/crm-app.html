@@ -2401,8 +2401,10 @@ document.getElementById('btn-save-visit').addEventListener('click', ()=>{
   } else {
     const visit = mkVisit(lead, data.date, data.time, data.technicianId, data.purpose, data.notes, 'Assigned', data);
     state.visits.push(visit);
-    lead.history.push({ts:Date.now(), type:'note', note:`Site visit assigned: ${data.service||data.purpose} on ${fmtDate(new Date(data.date).getTime())} at ${data.time}${tech?' · '+tech.name:''}`});
-    if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+    if(lead.id){
+      lead.history.push({ts:Date.now(), type:'note', note:`Site visit assigned: ${data.service||data.purpose} on ${fmtDate(new Date(data.date).getTime())} at ${data.time}${tech?' · '+tech.name:''}`});
+      if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+    }
     toast('Site visit assigned' + (tech? ' to '+tech.name : ''));
   }
   saveState(); closeModal('modal-visit'); renderVisits(); renderDashboard();
