@@ -19,7 +19,7 @@ function CrmHost() {
       return data.user?.id;
     }
     async function getWorkspaceId() {
-      try { return (await getAccount()).workspaceId as string; } catch { return getUserId(); }
+      try { return (await getAccount()).workspaceId as string; } catch { return (await getUserId()) ?? ""; }
     }
 
     async function handler(e: MessageEvent) {
