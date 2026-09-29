@@ -4662,10 +4662,17 @@ async function init(){
   if(sess && !sess.isAdmin){
     window.__adminUserId = state.currentUserId;
     let me = sess.teamMemberId ? teamMember(sess.teamMemberId) : null;
+    if(!me && sess.name){
+      const nm = String(sess.name).trim().toLowerCase();
+      me = state.team.find(t=>String(t.name||'').trim().toLowerCase()===nm) || null;
+    }
     if(!me){
       me = {id: state.nextTeamId++, name: sess.name||'Team member', role: sess.role, phone:'', color:'#2E9E6D'};
       state.team.push(me);
     }
+    // Re-link visits/tasks that point to a removed duplicate of this member
+    const validIds = new Set(state.team.map(t=>t.id));
+    (state.visits||[]).forEach(v=>{ if(v.technicianId!=null && !validIds.has(v.technicianId)) v.technicianId = me.id; });
     state.currentUserId = me.id;
     sess.teamMemberId = me.id;
   }
