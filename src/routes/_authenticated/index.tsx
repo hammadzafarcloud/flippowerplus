@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyAccount, listTeamLogins, createTeamLogin, updateTeamLogin, deleteTeamLogin } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: CrmHost,
@@ -11,9 +12,14 @@ function CrmHost() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let accountPromise: Promise<any> | null = null;
+    const getAccount = () => (accountPromise ||= getMyAccount());
     async function getUserId() {
       const { data } = await supabase.auth.getUser();
       return data.user?.id;
+    }
+    async function getWorkspaceId() {
+      try { return (await getAccount()).workspaceId as string; } catch { return getUserId(); }
     }
 
     async function handler(e: MessageEvent) {
@@ -39,18 +45,38 @@ function CrmHost() {
       const source = e.source as Window | null;
       const reply = (value: unknown) => source?.postMessage({ __crmReply: true, id: msg.id, value }, "*");
 
+      if (msg.op === "session") {
+        try { reply(await getAccount()); } catch (err: any) { reply({ isAdmin: true, role: "Admin", permissions: [], error: err?.message }); }
+        return;
+      }
+      if (msg.op === "team") {
+        const { action, args } = msg as { action: string; args: any };
+        try {
+          let data: unknown = null;
+          if (action === "list") data = await listTeamLogins();
+          else if (action === "create") data = await createTeamLogin({ data: args });
+          else if (action === "update") data = await updateTeamLogin({ data: args });
+          else if (action === "delete") data = await deleteTeamLogin({ data: args });
+          reply({ ok: true, data });
+        } catch (err: any) {
+          reply({ ok: false, error: err?.message || "error" });
+        }
+        return;
+      }
+      const wsId = await getWorkspaceId();
+
       if (msg.op === "get") {
         const { data } = await supabase
           .from("user_kv")
           .select("value")
-          .eq("user_id", userId)
+          .eq("user_id", wsId)
           .eq("key", msg.key)
           .maybeSingle();
         reply(data && data.value != null ? { value: data.value as string } : null);
       } else if (msg.op === "set") {
         await supabase
           .from("user_kv")
-          .upsert({ user_id: userId, key: msg.key, value: msg.value, updated_at: new Date().toISOString() });
+          .upsert({ user_id: wsId, key: msg.key, value: msg.value, updated_at: new Date().toISOString() });
         reply({ ok: true });
       } else if (msg.op === "booking") {
         const { action, args } = msg as { action: string; args: any };
@@ -96,7 +122,7 @@ function CrmHost() {
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
       <iframe
         ref={iframeRef}
-        title="Solar Care CRM"
+        title="Flip Power CRM"
         src="/crm-app.html"
         style={{ width: "100%", height: "100%", border: 0, display: "block" }}
       />
