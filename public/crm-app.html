@@ -2357,13 +2357,18 @@ function openVisitModal(lead, visit){
   document.getElementById('btn-save-visit').textContent = visit ? 'Save changes' : 'Assign visit';
   const g = id=>document.getElementById(id);
   if(visit){
-    g('v-lead').value = visit.leadId; g('v-date').value = visit.date; g('v-time').value = visit.time;
+    const manualVisit = !visit.leadId;
+    g('v-lead').value = manualVisit ? 'manual' : visit.leadId;
+    g('v-manual-wrap').style.display = manualVisit?'':'none';
+    g('v-manual-name').value = manualVisit ? (visit.leadName||'') : '';
+    g('v-date').value = visit.date; g('v-time').value = visit.time;
     g('v-tech').value = visit.technicianId||''; g('v-purpose').value = visit.purpose;
     g('v-service').value = visit.service||''; g('v-charges').value = visit.charges||'';
     g('v-phone').value = visit.leadPhone||''; g('v-address').value = visit.address||visit.leadArea||'';
     g('v-notes').value = visit.notes||'';
   } else {
     if(lead) g('v-lead').value = lead.id;
+    g('v-manual-name').value = '';
     g('v-date').value = dayOffset(1); g('v-time').value = '11:00';
     g('v-notes').value = ''; g('v-service').value=''; g('v-charges').value='';
     fillVisitFromLead();
