@@ -7,6 +7,10 @@ export const Route = createFileRoute("/book/$token")({
     meta: [
       { title: "Book a Service" },
       { name: "description", content: "Select services and submit your booking." },
+      { property: "og:title", content: "Book a Service | Flip Power" },
+      { property: "og:description", content: "Select solar services and submit your booking to Flip Power." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

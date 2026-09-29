@@ -1,15 +1,34 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAccount, listTeamLogins, createTeamLogin, updateTeamLogin, deleteTeamLogin } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/")({
+  head: () => ({
+    meta: [
+      { title: "Flip Power CRM | Workspace" },
+      { name: "description", content: "Manage Flip Power leads, site visits, tasks, bookings, inventory, expenses and team access." },
+      { property: "og:title", content: "Flip Power CRM | Workspace" },
+      { property: "og:description", content: "Manage Flip Power leads, site visits, tasks, bookings, inventory, expenses and team access." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CrmHost,
 });
 
 function CrmHost() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const signOut = useCallback(async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }, [navigate, queryClient]);
 
   useEffect(() => {
     let accountPromise: Promise<any> | null = null;
@@ -116,12 +135,7 @@ function CrmHost() {
 
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [navigate]);
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  }
+  }, [signOut]);
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
