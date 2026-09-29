@@ -2378,8 +2378,14 @@ function openVisitModal(lead, visit){
 document.getElementById('btn-new-visit').addEventListener('click', ()=> openVisitModal(null));
 document.getElementById('btn-save-visit').addEventListener('click', ()=>{
   const g = id=>document.getElementById(id).value;
-  const lead = state.leads.find(l=>l.id===parseInt(g('v-lead')));
-  if(!lead){ toast('Choose a client', 'info'); return; }
+  const sel = g('v-lead');
+  const manual = sel==='manual';
+  let lead = state.leads.find(l=>l.id===parseInt(sel));
+  if(manual){
+    const nm = g('v-manual-name').trim();
+    if(!nm){ toast('Enter the client name', 'info'); return; }
+    lead = {id:null, name:nm, phone:'', area:''};
+  } else if(!lead){ toast('Choose a client', 'info'); return; }
   const data = {
     leadId: lead.id, leadName: lead.name,
     leadPhone: g('v-phone').trim() || lead.phone, leadArea: lead.area,
