@@ -1368,7 +1368,7 @@ async function loadState(){
       const parsed = JSON.parse(r.value);
       state = Object.assign(state, parsed);
       // Migrate legacy brand name
-      if(state.settings && (state.settings.company === 'MPPT Care' || state.settings.company === 'Flip Power')){
+      if(state.settings && /^(MPPT Care|Solar Care( CRM)?|Flip Power)$/i.test(state.settings.company||'')){
         state.settings.company = 'Flip Power';
         try{ await saveState(); }catch(e){}
       }
@@ -4219,7 +4219,8 @@ document.getElementById('btn-delete-product').addEventListener('click', async ()
 });
 
 let moveDefaultProduct = null;
-function openMoveModal(pid){
+function openMoveModal(pid){ return requireInvPin(()=> openMoveModalInner(pid)); }
+function openMoveModalInner(pid){
   moveDefaultProduct = pid || null;
   const sel = document.getElementById('sm-product');
   sel.innerHTML = state.inventory.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${escapeHtml(p.name)} (${p.stock} ${p.unit})</option>`).join('');
