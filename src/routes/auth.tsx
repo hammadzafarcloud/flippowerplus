@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { needsAdminSetup, createFirstAdmin } from "@/lib/setup.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -57,9 +58,9 @@ function AuthPage() {
           </div>
         </div>
 
-        <h1 style={styles.h1}>Login</h1>
+        <h1 style={styles.h1}>{setup ? "Create admin account" : "Login"}</h1>
         <p style={styles.sub}>
-          Use the login your admin created for you.
+          {setup ? "First time setup: this account will be the admin." : "Use the login your admin created for you."}
         </p>
 
         <form onSubmit={handleEmail}>
@@ -69,7 +70,7 @@ function AuthPage() {
           <input required minLength={6} type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} placeholder="••••••••" />
           {err && <div style={styles.err}>{err}</div>}
           <button disabled={busy} type="submit" style={styles.primary}>
-            {busy ? "Please wait…" : "Login"}
+            {busy ? "Please wait…" : setup ? "Create admin & login" : "Login"}
           </button>
         </form>
 
