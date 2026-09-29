@@ -31,6 +31,10 @@
     get: function(key){ return call('get', key).then(function(v){ return v; }); },
     set: function(key, value){ return call('set', key, value); }
   };
+  window.teamApi = {
+    rpc: function(action, args){ return rpc('team', {action:action, args:args||{}}); }
+  };
+  window.crmSession = function(){ return rpc('session', {}); };
   window.booking = {
     rpc: function(action, args){ return rpc('booking', {action:action, args:args||{}}); }
   };
@@ -57,7 +61,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Care CRM</title>
+<title>Flip Power</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -134,6 +138,16 @@ a{color:inherit;}
   background:var(--brand);
 }
 .brand-mark img{width:100%;height:100%;object-fit:cover;display:block;}
+.sidebar .brand-mark{width:auto !important;height:auto !important;border-radius:8px !important;background:#fff !important;padding:4px 8px !important;box-shadow:none !important;}
+.sidebar .brand-mark img{height:34px !important;width:auto !important;max-width:170px;object-fit:contain !important;}
+.sidebar .brand{flex-direction:column;align-items:flex-start;gap:6px;}
+.sidebar .brand-text .name{display:none;}
+.vd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 14px;font-size:12px;color:var(--ink-soft);margin-top:8px;}
+.vd-grid b{color:var(--ink);font-weight:600;}
+.visit-card.detail{align-items:flex-start;}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;font-size:12.5px;margin:6px 0 10px;}
+.perm-grid label{display:flex;gap:6px;align-items:center;font-weight:500;}
+.pin-input{font-size:22px;letter-spacing:10px;text-align:center;font-family:var(--font-mono);}
 .brand-text{line-height:1.15;}
 .brand-text .name{font-family:var(--font-display);font-weight:700;font-size:15.5px;letter-spacing:0.2px;}
 .brand-text .tag{font-size:10.5px;color:#9FB0C6;font-family:var(--font-mono);letter-spacing:0.6px;text-transform:uppercase;}
@@ -483,10 +497,10 @@ tbody tr:hover{background:var(--paper-2);}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">
-        <img id="brand-logo-img" alt="Solar Care CRM logo">
+        <img id="brand-logo-img" alt="Flip Power logo">
       </div>
       <div class="brand-text">
-        <div class="name">Solar Care CRM</div>
+        <div class="name">Flip Power</div>
         <div class="tag">Solar Service CRM</div>
       </div>
     </div>
@@ -511,7 +525,11 @@ tbody tr:hover{background:var(--paper-2);}
       </button>
       <button class="nav-item" data-view="visits">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-        Site Visits
+        Site Visits Assigned
+      </button>
+      <button class="nav-item" data-view="visitsdone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M9 15l2 2 4-4"/></svg>
+        Site Visits Completed
       </button>
       <button class="nav-item" data-view="tasks">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
@@ -642,12 +660,26 @@ tbody tr:hover{background:var(--paper-2);}
         <div class="table-toolbar">
           <button class="btn btn-amber btn-sm" id="btn-new-visit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-            Schedule visit
+            Assign site visit
           </button>
-          <select class="select-filter" id="filter-visit-status"><option value="">All statuses</option><option>Scheduled</option><option>Completed</option><option>Cancelled</option></select>
+          <select class="select-filter" id="filter-visit-status"><option value="">Open (assigned + in progress)</option><option>Assigned</option><option>In Progress</option><option>Cancelled</option></select>
           <select class="select-filter" id="filter-visit-tech"><option value="">All technicians</option></select>
         </div>
         <div id="visits-agenda"></div>
+      </div>
+
+      <!-- SITE VISITS COMPLETED -->
+      <div class="view" id="view-visitsdone">
+        <div class="table-toolbar">
+          <input class="select-filter" id="vd-search" placeholder="Search client, area, service…" style="min-width:200px;">
+          <input class="select-filter" type="date" id="vd-from" title="From date">
+          <input class="select-filter" type="date" id="vd-to" title="To date">
+          <select class="select-filter" id="vd-tech"><option value="">All technicians</option></select>
+          <select class="select-filter" id="vd-service"><option value="">All services</option></select>
+          <select class="select-filter" id="vd-pay"><option value="">All payments</option><option>Paid</option><option>Partial</option><option>Unpaid</option></select>
+        </div>
+        <div id="vd-summary" class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;"></div>
+        <div id="vd-list"></div>
       </div>
 
       <!-- TASKS -->
@@ -859,8 +891,28 @@ tbody tr:hover{background:var(--paper-2);}
             <div class="field" style="margin-bottom:10px;"><label>Phone</label><input id="tm-phone" placeholder="923001234567"></div>
             <button class="btn btn-primary btn-sm" id="btn-add-team">Add member</button>
             <p style="font-size:11.5px;color:var(--ink-soft);margin-top:14px;">
-              "Viewing as" in the sidebar simulates each role's access — Technicians and Sales Executives see a reduced menu, giving you a preview of role-based permissions.
+              Add the person here first, then create their login below and choose which pages they can see.
             </p>
+          </div>
+        </div>
+        <div class="dash-cols" style="margin-top:14px;">
+          <div class="card">
+            <h3>Team logins</h3>
+            <div id="login-list"><div class="cell-sub">Loading…</div></div>
+          </div>
+          <div class="card">
+            <h3 id="lg-title">Create login</h3>
+            <input type="hidden" id="lg-userid">
+            <div class="field" style="margin-bottom:8px;"><label>Team member</label><select id="lg-member"></select></div>
+            <div class="field" style="margin-bottom:8px;"><label>Email (used to log in)</label><input id="lg-email" type="email" placeholder="name@flippower.pk"></div>
+            <div class="field" style="margin-bottom:8px;"><label>Password <span id="lg-pass-hint" style="font-weight:400;color:var(--ink-soft);">(min 6 characters)</span></label><input id="lg-pass" type="text" autocomplete="new-password"></div>
+            <div class="field" style="margin-bottom:6px;"><label>Role</label><select id="lg-role"><option>Technician</option><option>Sales Executive</option><option>Admin</option></select></div>
+            <label style="font-size:12px;font-weight:600;">Pages this person can see</label>
+            <div class="perm-grid" id="lg-perms"></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" id="btn-save-login">Create login</button>
+              <button class="btn btn-outline btn-sm" id="btn-cancel-login" style="display:none;">Cancel edit</button>
+            </div>
           </div>
         </div>
       </div>
@@ -893,7 +945,7 @@ tbody tr:hover{background:var(--paper-2);}
             <div class="settings-row">
               <div>
                 <div class="l">Facebook Lead Ads</div>
-                <div class="d">Page: Solar Care CRM</div>
+                <div class="d">Page: Flip Power</div>
               </div>
               <button class="toggle on" data-conn="facebook"></button>
             </div>
@@ -909,7 +961,7 @@ tbody tr:hover{background:var(--paper-2);}
           <div class="card">
             <h3>Company profile</h3>
             <div class="field-grid">
-              <div class="field"><label>Company name</label><input id="s-company" value="Solar Care CRM"></div>
+              <div class="field"><label>Company name</label><input id="s-company" value="Flip Power"></div>
               <div class="field"><label>Support phone (WhatsApp)</label><input id="s-phone" value="+92 300 1122334"></div>
               <div class="field" style="grid-column:1/-1;"><label>Address</label><input id="s-address" value="3rd Floor, Siddiq Trade Center, MM Alam Road, Gulberg III, Lahore"></div>
               <div class="field"><label>Default WhatsApp country code</label><input id="s-cc" value="92"></div>
@@ -917,7 +969,7 @@ tbody tr:hover{background:var(--paper-2);}
               <div class="field"><label>Default rate per kW (Rs)</label><input id="s-rate" type="number" value="190000"></div>
             </div>
             <p style="font-size:11.5px;color:var(--ink-soft);margin-top:12px;">
-              Your Solar Care CRM logo is applied across the sidebar and invoice header, and the theme now matches its red brand color. Upload a new version any time to swap it in.
+              Your Flip Power logo is applied across the sidebar and invoice header, and the theme now matches its red brand color. Upload a new version any time to swap it in.
             </p>
             <button class="btn btn-primary btn-sm" id="btn-save-settings">Save changes</button>
           </div>
@@ -1035,20 +1087,60 @@ tbody tr:hover{background:var(--paper-2);}
 
 <!-- VISIT MODAL -->
 <div class="modal" id="modal-visit">
-  <div class="modal-head"><h3>Schedule a site visit</h3><button class="close-x" data-close="modal-visit">✕</button></div>
+  <div class="modal-head"><h3 id="v-modal-title">Assign a site visit</h3><button class="close-x" data-close="modal-visit">✕</button></div>
   <div class="modal-body">
     <div class="field-grid">
-      <div class="field" style="grid-column:1/-1;"><label>Lead</label><select id="v-lead"></select></div>
-      <div class="field"><label>Date</label><input id="v-date" type="date"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Client / Lead</label><select id="v-lead"></select></div>
+      <div class="field"><label>Visit date</label><input id="v-date" type="date"></div>
       <div class="field"><label>Time</label><input id="v-time" type="time" value="11:00"></div>
       <div class="field"><label>Technician</label><select id="v-tech"></select></div>
-      <div class="field"><label>Purpose</label><select id="v-purpose"><option>Site Survey</option><option>Installation</option><option>Maintenance / AMC</option><option>Repair</option></select></div>
-      <div class="field" style="grid-column:1/-1;"><label>Notes</label><textarea id="v-notes" placeholder="Access instructions, gate code, etc."></textarea></div>
+      <div class="field"><label>Visit type</label><select id="v-purpose"><option>Inspection / Site Survey</option><option>Installation</option><option>Repair</option><option>Cleaning</option><option>Maintenance / AMC</option><option>Upgradation</option></select></div>
+      <div class="field" style="grid-column:1/-1;"><label>Service to provide</label><input id="v-service" list="v-service-list" placeholder="e.g. Inverter Repair & Replacement"><datalist id="v-service-list"></datalist></div>
+      <div class="field"><label>Charges (PKR)</label><input id="v-charges" type="number" min="0" placeholder="0"></div>
+      <div class="field"><label>Contact phone</label><input id="v-phone" placeholder="92300…"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Site address</label><input id="v-address" placeholder="Full address"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Instructions for technician</label><textarea id="v-notes" placeholder="Access instructions, tools to bring, system details…"></textarea></div>
     </div>
   </div>
   <div class="modal-foot">
     <button class="btn btn-outline" data-close="modal-visit">Cancel</button>
-    <button class="btn btn-amber" id="btn-save-visit">Schedule visit</button>
+    <button class="btn btn-amber" id="btn-save-visit">Assign visit</button>
+  </div>
+</div>
+
+<!-- VISIT COMPLETE MODAL -->
+<div class="modal" id="modal-visit-done">
+  <div class="modal-head"><h3>Mark site visit complete</h3><button class="close-x" data-close="modal-visit-done">✕</button></div>
+  <div class="modal-body">
+    <div id="vc-info" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"></div>
+    <div class="field-grid">
+      <div class="field"><label>Completed on</label><input id="vc-date" type="date"></div>
+      <div class="field"><label>Time</label><input id="vc-time" type="time"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Services provided</label><input id="vc-services" placeholder="What was done on site"></div>
+      <div class="field"><label>Final charges (PKR)</label><input id="vc-charges" type="number" min="0"></div>
+      <div class="field"><label>Amount received (PKR)</label><input id="vc-paid" type="number" min="0"></div>
+      <div class="field"><label>Payment method</label><select id="vc-method"></select></div>
+      <div class="field"><label>Materials used</label><input id="vc-materials" placeholder="Optional"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Work notes / findings</label><textarea id="vc-notes" placeholder="Findings, recommendations, client feedback…"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-outline" data-close="modal-visit-done">Cancel</button>
+    <button class="btn btn-green" id="btn-save-visit-done">Mark complete</button>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal" id="modal-pin">
+  <div class="modal-head"><h3>Enter inventory PIN</h3><button class="close-x" data-close="modal-pin">✕</button></div>
+  <div class="modal-body">
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;">Editing products is protected. Enter the 4-digit PIN to continue.</p>
+    <input id="pin-input" class="pin-input" type="password" inputmode="numeric" maxlength="8" autocomplete="off" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;">
+    <div id="pin-err" style="color:var(--red);font-size:12px;margin-top:8px;display:none;">Wrong PIN</div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-outline" data-close="modal-pin">Cancel</button>
+    <button class="btn btn-primary" id="btn-pin-ok">Unlock</button>
   </div>
 </div>
 
@@ -1199,7 +1291,7 @@ tbody tr:hover{background:var(--paper-2);}
 
 /* ============================= DATA MODEL ============================= */
 
-const LOGO_DATA_URI = "/__l5e/assets-v1/b41e5236-c8de-45fe-b702-90f95cc0aa41/solar-care-logo.png";
+const LOGO_DATA_URI = "/__l5e/assets-v1/595fc7be-5fc2-41a7-b5bf-69f874f0d80d/flip-power-logo.png";
 const STAGES = [
   {key:'new', label:'New', color:'#3B6FA6'},
   {key:'contacted', label:'Contacted', color:'#8A6FD1'},
@@ -1218,6 +1310,8 @@ const NAV_ROLES = {
   dashboard:['Admin','Sales Executive','Technician'],
   leads:['Admin','Sales Executive','Technician'],
   visits:['Admin','Sales Executive','Technician'],
+  visitsdone:['Admin','Sales Executive','Technician'],
+  expenses:['Admin','Sales Executive','Technician'],
   tasks:['Admin','Sales Executive','Technician'],
   quotes:['Admin','Sales Executive'],
   invoices:['Admin','Sales Executive'],
@@ -1242,7 +1336,7 @@ let state = {
   stockMoves: [],
   currentUserId: 1,
   settings: {
-    company: 'Solar Care CRM',
+    company: 'Flip Power',
     phone: '+92 300 1122334',
     address: '3rd Floor, Siddiq Trade Center, MM Alam Road, Gulberg III, Lahore',
     cc: '92',
@@ -1274,18 +1368,43 @@ async function loadState(){
       const parsed = JSON.parse(r.value);
       state = Object.assign(state, parsed);
       // Migrate legacy brand name
-      if(state.settings && state.settings.company === 'MPPT Care'){
-        state.settings.company = 'Solar Care CRM';
+      if(state.settings && (state.settings.company === 'MPPT Care' || state.settings.company === 'Flip Power')){
+        state.settings.company = 'Flip Power';
         try{ await saveState(); }catch(e){}
       }
+      if(trimSampleData()) { try{ await saveState(); }catch(e){} }
       return true;
     }
   }catch(e){ /* no saved state yet */ }
   return false;
 }
+// One-time cleanup: keep only 4 sample leads and 4 core solar products (user-added records are untouched)
+function trimSampleData(){
+  state.flags = state.flags || {};
+  let changed = false;
+  (state.visits||[]).forEach(v=>{ if(v.status==='Scheduled'){ v.status='Assigned'; changed = true; } });
+  if(state.flags.sampleTrimV1) return changed;
+  state.flags.sampleTrimV1 = true;
+  const dropPhones = new Set(['923215551005','923215551006','923215551007','923215551008','923215551009','923215551010']);
+  const removed = new Set((state.leads||[]).filter(l=>dropPhones.has(l.phone)).map(l=>l.id));
+  state.leads = (state.leads||[]).filter(l=>!removed.has(l.id));
+  const keepLead = x=> !x.leadId || !removed.has(x.leadId);
+  ['quotes','invoices','visits','expenses','tasks','stockMoves'].forEach(k=>{ if(state[k]) state[k] = state[k].filter(keepLead); });
+  state.expenses = (state.expenses||[]).filter(e=>e.desc!=='Site visit transport — Model Town & Bahria Town');
+  const seededSkus = ['PNL-LG-550','PNL-JA-555','INV-GW-5K','INV-SL-10K','INV-DY-8H','BAT-PT-3K5','BAT-PX-150','MNT-LF-01','MNT-RL-42','WR-DC-4R','WR-DC-4B','WR-AC-6','WR-EG-10','DB-AC-8W','DB-DC-2I','BRK-32-1P','BRK-63-2P','DC-ISO-32','SPD-DC-1K','MC4-PR','MC4-Y','CT-300','SIL-300','NM-APP','NM-MTR-1','TL-CM-600','TL-MC4'];
+  const keepSkus = new Set(['PNL-LG-550','INV-GW-5K','BAT-PT-3K5','WR-DC-4R']);
+  const dropProd = new Set((state.inventory||[]).filter(p=>seededSkus.includes(p.sku) && !keepSkus.has(p.sku)).map(p=>p.id));
+  state.inventory = (state.inventory||[]).filter(p=>!dropProd.has(p.id));
+  state.stockMoves = (state.stockMoves||[]).filter(m=>!dropProd.has(m.productId));
+  state.syncLog = [];
+  return true;
+}
 async function saveState(){
   try{
-    await window.storage.set('mppt_state_v2', JSON.stringify(state), false);
+    let toSave = state;
+    const sess = window.__session;
+    if(sess && !sess.isAdmin){ toSave = Object.assign({}, state, {currentUserId: window.__adminUserId || state.currentUserId}); }
+    await window.storage.set('mppt_state_v2', JSON.stringify(toSave), false);
   }catch(e){ console.error('save failed', e); }
 }
 
@@ -1458,11 +1577,13 @@ function mkQuote(lead, kw, ratePerKw, status){
     items, status: status||'Draft', date: Date.now()
   };
 }
-function mkVisit(lead, date, time, technicianId, purpose, notes, status){
-  return {
+function mkVisit(lead, date, time, technicianId, purpose, notes, status, extra){
+  return Object.assign({
     id: state.nextVisitId++, leadId: lead.id, leadName: lead.name, leadPhone: lead.phone, leadArea: lead.area,
-    date, time, technicianId, purpose: purpose||'Site Survey', notes: notes||'', status: status||'Scheduled', createdAt: Date.now()
-  };
+    address: lead.area||'', service: lead.systemType||'', charges: 0,
+    date, time, technicianId, purpose: purpose||'Inspection / Site Survey', notes: notes||'', status: status||'Assigned', createdAt: Date.now(),
+    assignedBy: state.currentUserId
+  }, extra||{});
 }
 function mkExpense(desc, category, amount, leadId, date){
   return {id: state.nextExpenseId++, desc, category, amount, leadId: leadId||null, date};
@@ -1544,14 +1665,18 @@ sel_listener: (function(){
 function applyRoleVisibility(){
   const user = teamMember(state.currentUserId) || state.team[0];
   const role = user.role;
+  const sess = window.__session;
   document.querySelectorAll('.nav-item').forEach(btn=>{
     const v = btn.dataset.view;
-    const allowed = NAV_ROLES[v].includes(role);
+    const allowed = (sess && !sess.isAdmin)
+      ? (sess.permissions||[]).includes(v) && v!=='team'
+      : (NAV_ROLES[v]||['Admin']).includes(role);
     btn.style.display = allowed ? '' : 'none';
   });
   const activeBtn = document.querySelector('.nav-item.active');
   if(activeBtn && activeBtn.style.display==='none'){
-    document.querySelector('.nav-item[data-view="dashboard"]').click();
+    const first = Array.from(document.querySelectorAll('.nav-item')).find(b=>b.style.display!=='none');
+    if(first) first.click();
   }
 }
 
@@ -1566,7 +1691,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     const titles = {
       dashboard:['Dashboard','Live overview of your solar service pipeline'],
       leads:['Leads','All leads from website, Facebook and manual entry'],
-      visits:['Site Visits','Scheduled surveys, installations and maintenance visits'],
+      visits:['Site Visits Assigned','Inspections and jobs assigned to technicians'],
+      visitsdone:['Site Visits Completed','Completed site work with services, charges and payments'],
       tasks:['Tasks','Follow-ups, callbacks and any work you need to remember'],
       quotes:['Quotes','System sizing and customer quotations'],
       invoices:['Invoices','Generated invoices and payment status'],
@@ -1585,6 +1711,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     if(v==='dashboard') renderDashboard();
     if(v==='leads') renderLeads();
     if(v==='visits') renderVisits();
+    if(v==='visitsdone') renderVisitsDone();
     if(v==='tasks') renderTasks();
     if(v==='quotes') renderQuotes();
     if(v==='invoices') renderInvoices();
@@ -1660,7 +1787,7 @@ function renderDashboard(){
     </div>
   `).join('') || emptyMsg('No activity yet');
 
-  const upcoming = state.visits.filter(v=>v.status==='Scheduled').sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  const upcoming = state.visits.filter(v=>v.status==='Assigned'||v.status==='In Progress'||v.status==='Scheduled').sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
   document.getElementById('dash-visits').innerHTML = upcoming.length ? upcoming.map(v=>`
     <div class="mini-row">
       <div><div class="who">${v.leadName}</div><div class="meta">${v.purpose} · ${teamMember(v.technicianId)? teamMember(v.technicianId).name:'Unassigned'}</div></div>
@@ -2110,100 +2237,284 @@ function importCsvText(text){
 }
 
 /* ============================= SITE VISITS ============================= */
+function isOpenVisit(v){ return v.status==='Assigned'||v.status==='In Progress'||v.status==='Scheduled'; }
+function myTechFilter(list){
+  const sess = window.__session;
+  if(sess && !sess.isAdmin && sess.role==='Technician' && sess.teamMemberId){
+    return list.filter(v=>v.technicianId===sess.teamMemberId);
+  }
+  return list;
+}
+function techOptions(){ return state.team.filter(t=>t.role==='Technician'); }
 function populateVisitFilters(){
+  const opts = techOptions().map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
   const tech = document.getElementById('filter-visit-tech');
-  tech.innerHTML = '<option value="">All technicians</option>' + state.team.filter(t=>t.role==='Technician').map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const cur = tech.value;
+  tech.innerHTML = '<option value="">All technicians</option>' + opts; tech.value = cur;
   const vLead = document.getElementById('v-lead');
-  vLead.innerHTML = state.leads.map(l=>`<option value="${l.id}">${l.name} — ${l.area||'—'}</option>`).join('');
-  const vTech = document.getElementById('v-tech');
-  vTech.innerHTML = state.team.filter(t=>t.role==='Technician').map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  vLead.innerHTML = state.leads.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} — ${escapeHtml(l.area||'—')}</option>`).join('');
+  document.getElementById('v-tech').innerHTML = '<option value="">— Unassigned —</option>' + opts;
+  document.getElementById('v-service-list').innerHTML = (state.settings.services||[]).map(x=>`<option value="${escapeHtml(x)}">`).join('');
+}
+function visitStatusColor(st){
+  return st==='Completed' ? 'var(--green)' : st==='Cancelled' ? 'var(--red)' : st==='In Progress' ? '#D9860F' : 'var(--blue)';
 }
 function renderVisits(){
   populateVisitFilters();
   const fStatus = document.getElementById('filter-visit-status').value;
   const fTech = document.getElementById('filter-visit-tech').value;
-  let visits = [...state.visits];
-  if(fStatus) visits = visits.filter(v=>v.status===fStatus);
+  let visits = myTechFilter(state.visits.filter(v=>v.status!=='Completed'));
+  if(fStatus) visits = visits.filter(v=>(v.status==='Scheduled'?'Assigned':v.status)===fStatus);
+  else visits = visits.filter(isOpenVisit);
   if(fTech) visits = visits.filter(v=>String(v.technicianId)===fTech);
   visits.sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
   const groups = {};
   visits.forEach(v=>{ (groups[v.date] = groups[v.date]||[]).push(v); });
   const wrap = document.getElementById('visits-agenda');
   const dates = Object.keys(groups).sort();
-  if(!dates.length){ wrap.innerHTML = emptyMsg('No visits match. Schedule one to get started.'); return; }
+  if(!dates.length){ wrap.innerHTML = emptyMsg('No assigned site visits. Use "Assign site visit" to send a technician.'); return; }
+  const isAdminish = !window.__session || window.__session.isAdmin || window.__session.role!=='Technician';
   wrap.innerHTML = dates.map(d=>{
     const label = fmtDate(new Date(d).getTime());
     const isToday = d === dayOffset(0);
+    const overdue = d < dayOffset(0);
     return `
       <div class="day-group">
-        <div class="day-group-label"><span>${isToday?'Today · ':''}${label}</span><span>${groups[d].length} visit(s)</span></div>
+        <div class="day-group-label"><span>${isToday?'Today · ':''}${overdue?'Overdue · ':''}${label}</span><span>${groups[d].length} visit(s)</span></div>
         ${groups[d].map(v=>{
           const tech = teamMember(v.technicianId);
-          const statusColor = v.status==='Completed' ? 'var(--green)' : v.status==='Cancelled' ? 'var(--red)' : 'var(--blue)';
+          const by = teamMember(v.assignedBy);
+          const st = v.status==='Scheduled'?'Assigned':v.status;
+          const c = visitStatusColor(st);
+          const phone = (v.leadPhone||'').replace(/\D/g,'');
           return `
-          <div class="visit-card" data-id="${v.id}">
-            <div class="visit-left">
+          <div class="visit-card detail" data-id="${v.id}">
+            <div class="visit-left" style="align-items:flex-start;flex:1;min-width:260px;">
               <div class="visit-time">${v.time}</div>
-              <div>
-                <div class="cell-name">${v.leadName} <span class="badge" style="background:${hex2soft(statusColor)};color:${statusColor};margin-left:4px;">${v.status}</span></div>
-                <div class="cell-sub">${v.purpose} · ${v.leadArea||'—'} · ${tech?tech.name:'Unassigned'}</div>
+              <div style="flex:1;">
+                <div class="cell-name">${escapeHtml(v.leadName)} <span class="badge" style="background:${hex2soft(c)};color:${c};margin-left:4px;">${st}</span></div>
+                <div class="cell-sub">${escapeHtml(v.purpose)}${v.service?' · '+escapeHtml(v.service):''}</div>
+                <div class="vd-grid">
+                  <div>Technician: <b>${tech?escapeHtml(tech.name):'Unassigned'}</b></div>
+                  <div>Charges: <b>${fmtMoney(v.charges||0)}</b></div>
+                  <div>Phone: <b>${escapeHtml(v.leadPhone||'—')}</b></div>
+                  <div>Address: <b>${escapeHtml(v.address||v.leadArea||'—')}</b></div>
+                  ${by?`<div>Assigned by: <b>${escapeHtml(by.name)}</b></div>`:''}
+                  ${v.startedAt?`<div>Started: <b>${fmtDate(v.startedAt)}</b></div>`:''}
+                </div>
+                ${v.notes?`<div style="font-size:12px;margin-top:6px;color:var(--ink);background:var(--paper,#f6f1e6);padding:6px 8px;border-radius:6px;">📝 ${escapeHtml(v.notes)}</div>`:''}
               </div>
             </div>
             <div class="visit-actions">
-              ${v.status==='Scheduled' ? `<button class="btn btn-green btn-sm visit-complete" data-id="${v.id}">Mark complete</button>
+              ${st==='Assigned' ? `<button class="btn btn-outline btn-sm visit-start" data-id="${v.id}">Start</button>`:''}
+              ${isOpenVisit(v) ? `<button class="btn btn-green btn-sm visit-complete" data-id="${v.id}">Mark complete</button>`:''}
+              ${isOpenVisit(v) && isAdminish ? `<button class="btn btn-outline btn-sm visit-edit" data-id="${v.id}">Edit</button>
               <button class="btn btn-danger btn-sm visit-cancel" data-id="${v.id}">Cancel</button>` : ''}
-              <a class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener noreferrer" href="https://web.whatsapp.com/send?phone=${(v.leadPhone||'').replace(/\D/g,'')}&text=${encodeURIComponent('Hi '+v.leadName+', this is '+state.settings.company+'. Confirming your '+v.purpose.toLowerCase()+' visit on '+fmtDate(new Date(v.date).getTime())+' at '+v.time+'. See you then!')}">Remind</a>
+              ${phone?`<a class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener noreferrer" href="https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent('Hi '+v.leadName+', this is '+state.settings.company+'. Confirming your '+(v.service||v.purpose).toLowerCase()+' visit on '+fmtDate(new Date(v.date).getTime())+' at '+v.time+'.'+(tech?' Technician: '+tech.name+'.':''))}">Remind</a>`:''}
             </div>
           </div>
         `;}).join('')}
       </div>
     `;
   }).join('');
-  wrap.querySelectorAll('.visit-complete').forEach(b=> b.addEventListener('click', e=>{
-    e.stopPropagation();
-    const v = state.visits.find(x=>x.id===parseInt(b.dataset.id));
-    v.status='Completed';
-    const lead = state.leads.find(l=>l.id===v.leadId);
-    if(lead) lead.history.push({ts:Date.now(), type:'note', note:`Site visit completed: ${v.purpose}`});
-    saveState(); renderVisits(); renderDashboard();
-    toast('Visit marked complete');
+  const byId = id=> state.visits.find(x=>x.id===parseInt(id));
+  wrap.querySelectorAll('.visit-start').forEach(b=> b.addEventListener('click', ()=>{
+    const v = byId(b.dataset.id); v.status='In Progress'; v.startedAt=Date.now();
+    saveState(); renderVisits(); toast('Visit started');
   }));
-  wrap.querySelectorAll('.visit-cancel').forEach(b=> b.addEventListener('click', e=>{
-    e.stopPropagation();
-    const v = state.visits.find(x=>x.id===parseInt(b.dataset.id));
-    v.status='Cancelled';
+  wrap.querySelectorAll('.visit-complete').forEach(b=> b.addEventListener('click', ()=> openVisitDone(byId(b.dataset.id))));
+  wrap.querySelectorAll('.visit-edit').forEach(b=> b.addEventListener('click', ()=> openVisitModal(null, byId(b.dataset.id))));
+  wrap.querySelectorAll('.visit-cancel').forEach(b=> b.addEventListener('click', ()=>{
+    if(!confirm('Cancel this site visit?')) return;
+    const v = byId(b.dataset.id); v.status='Cancelled';
     saveState(); renderVisits(); renderDashboard();
     toast('Visit cancelled', 'info');
   }));
 }
 document.getElementById('filter-visit-status').addEventListener('change', renderVisits);
 document.getElementById('filter-visit-tech').addEventListener('change', renderVisits);
-let visitLockedLead = null;
-function openVisitModal(lead){
+
+let visitLockedLead = null, editingVisitId = null;
+function fillVisitFromLead(){
+  if(editingVisitId) return;
+  const l = state.leads.find(x=>x.id===parseInt(document.getElementById('v-lead').value));
+  if(!l) return;
+  document.getElementById('v-phone').value = l.phone||'';
+  document.getElementById('v-address').value = l.area||'';
+  if(!document.getElementById('v-service').value) document.getElementById('v-service').value = l.systemType||'';
+}
+document.getElementById('v-lead').addEventListener('change', ()=>{ document.getElementById('v-service').value=''; fillVisitFromLead(); });
+function openVisitModal(lead, visit){
   populateVisitFilters();
   visitLockedLead = lead || null;
-  if(lead) document.getElementById('v-lead').value = lead.id;
-  document.getElementById('v-date').value = dayOffset(1);
-  document.getElementById('v-time').value = '11:00';
-  document.getElementById('v-notes').value = '';
+  editingVisitId = visit ? visit.id : null;
+  document.getElementById('v-modal-title').textContent = visit ? 'Edit site visit' : 'Assign a site visit';
+  document.getElementById('btn-save-visit').textContent = visit ? 'Save changes' : 'Assign visit';
+  const g = id=>document.getElementById(id);
+  if(visit){
+    g('v-lead').value = visit.leadId; g('v-date').value = visit.date; g('v-time').value = visit.time;
+    g('v-tech').value = visit.technicianId||''; g('v-purpose').value = visit.purpose;
+    g('v-service').value = visit.service||''; g('v-charges').value = visit.charges||'';
+    g('v-phone').value = visit.leadPhone||''; g('v-address').value = visit.address||visit.leadArea||'';
+    g('v-notes').value = visit.notes||'';
+  } else {
+    if(lead) g('v-lead').value = lead.id;
+    g('v-date').value = dayOffset(1); g('v-time').value = '11:00';
+    g('v-notes').value = ''; g('v-service').value=''; g('v-charges').value='';
+    fillVisitFromLead();
+  }
   openModal('modal-visit');
 }
 document.getElementById('btn-new-visit').addEventListener('click', ()=> openVisitModal(null));
 document.getElementById('btn-save-visit').addEventListener('click', ()=>{
-  const leadId = parseInt(document.getElementById('v-lead').value);
-  const lead = state.leads.find(l=>l.id===leadId);
-  if(!lead){ toast('Choose a lead', 'info'); return; }
-  const date = document.getElementById('v-date').value || dayOffset(1);
-  const time = document.getElementById('v-time').value || '11:00';
-  const techId = parseInt(document.getElementById('v-tech').value);
-  const purpose = document.getElementById('v-purpose').value;
-  const notes = document.getElementById('v-notes').value;
-  const visit = mkVisit(lead, date, time, techId, purpose, notes);
-  state.visits.push(visit);
-  lead.history.push({ts:Date.now(), type:'note', note:`Site visit scheduled: ${purpose} on ${fmtDate(new Date(date).getTime())} at ${time}`});
-  if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+  const g = id=>document.getElementById(id).value;
+  const lead = state.leads.find(l=>l.id===parseInt(g('v-lead')));
+  if(!lead){ toast('Choose a client', 'info'); return; }
+  const data = {
+    leadId: lead.id, leadName: lead.name,
+    leadPhone: g('v-phone').trim() || lead.phone, leadArea: lead.area,
+    address: g('v-address').trim(), service: g('v-service').trim(),
+    charges: parseFloat(g('v-charges'))||0,
+    date: g('v-date') || dayOffset(1), time: g('v-time') || '11:00',
+    technicianId: parseInt(g('v-tech')) || null, purpose: g('v-purpose'), notes: g('v-notes')
+  };
+  const tech = teamMember(data.technicianId);
+  if(editingVisitId){
+    Object.assign(state.visits.find(x=>x.id===editingVisitId), data);
+    toast('Site visit updated');
+  } else {
+    const visit = mkVisit(lead, data.date, data.time, data.technicianId, data.purpose, data.notes, 'Assigned', data);
+    state.visits.push(visit);
+    lead.history.push({ts:Date.now(), type:'note', note:`Site visit assigned: ${data.service||data.purpose} on ${fmtDate(new Date(data.date).getTime())} at ${data.time}${tech?' · '+tech.name:''}`});
+    if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+    toast('Site visit assigned' + (tech? ' to '+tech.name : ''));
+  }
   saveState(); closeModal('modal-visit'); renderVisits(); renderDashboard();
-  toast('Site visit scheduled');
+});
+
+let completingVisitId = null;
+function openVisitDone(v){
+  completingVisitId = v.id;
+  const tech = teamMember(v.technicianId);
+  document.getElementById('vc-info').innerHTML = `<b>${escapeHtml(v.leadName)}</b> · ${escapeHtml(v.service||v.purpose)} · ${tech?escapeHtml(tech.name):'Unassigned'}`;
+  const now = new Date();
+  document.getElementById('vc-date').value = dayOffset(0);
+  document.getElementById('vc-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('vc-services').value = v.service || v.purpose;
+  document.getElementById('vc-charges').value = v.charges || '';
+  document.getElementById('vc-paid').value = '';
+  document.getElementById('vc-method').innerHTML = PAYMENT_METHODS.map(m=>`<option>${m}</option>`).join('');
+  document.getElementById('vc-materials').value = '';
+  document.getElementById('vc-notes').value = '';
+  openModal('modal-visit-done');
+}
+document.getElementById('btn-save-visit-done').addEventListener('click', ()=>{
+  const v = state.visits.find(x=>x.id===completingVisitId); if(!v) return;
+  const g = id=>document.getElementById(id).value;
+  const charges = parseFloat(g('vc-charges'))||0;
+  const paid = parseFloat(g('vc-paid'))||0;
+  Object.assign(v, {
+    status:'Completed',
+    completedDate: g('vc-date') || dayOffset(0),
+    completedTime: g('vc-time') || '',
+    completedAt: Date.now(),
+    completedBy: state.currentUserId,
+    servicesProvided: g('vc-services').trim(),
+    finalCharges: charges,
+    amountPaid: paid,
+    paymentMethod: paid>0 ? g('vc-method') : '',
+    paymentStatus: paid<=0 ? (charges>0?'Unpaid':'Paid') : (paid>=charges?'Paid':'Partial'),
+    materials: g('vc-materials').trim(),
+    completionNotes: g('vc-notes').trim()
+  });
+  const lead = state.leads.find(l=>l.id===v.leadId);
+  if(lead){
+    lead.history.push({ts:Date.now(), type:'note', note:`Site visit completed: ${v.servicesProvided||v.purpose} · Charges ${fmtMoney(charges)} · Received ${fmtMoney(paid)}`});
+    if(paid>0){ lead.payments = lead.payments||[]; lead.payments.push({amount:paid, method:v.paymentMethod, date:Date.now()}); }
+  }
+  saveState(); closeModal('modal-visit-done'); renderVisits(); renderDashboard();
+  toast('Visit marked complete');
+});
+
+function renderVisitsDone(){
+  const g = id=>document.getElementById(id);
+  const techSel = g('vd-tech'), svcSel = g('vd-service');
+  const curT = techSel.value, curS = svcSel.value;
+  techSel.innerHTML = '<option value="">All technicians</option>' + techOptions().map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  techSel.value = curT;
+  let done = myTechFilter(state.visits.filter(v=>v.status==='Completed'));
+  const svcs = Array.from(new Set(done.map(v=>v.servicesProvided||v.service||v.purpose).filter(Boolean)));
+  svcSel.innerHTML = '<option value="">All services</option>' + svcs.map(x=>`<option>${escapeHtml(x)}</option>`).join('');
+  svcSel.value = curS;
+  const q = g('vd-search').value.trim().toLowerCase();
+  const from = g('vd-from').value, to = g('vd-to').value, pay = g('vd-pay').value;
+  const dOf = v=> v.completedDate || v.date;
+  const payOf = v=> v.paymentStatus || 'Unpaid';
+  if(q) done = done.filter(v=> [v.leadName,v.leadArea,v.address,v.service,v.servicesProvided,v.purpose].join(' ').toLowerCase().includes(q));
+  if(from) done = done.filter(v=> dOf(v) >= from);
+  if(to) done = done.filter(v=> dOf(v) <= to);
+  if(curT) done = done.filter(v=> String(v.technicianId)===curT);
+  if(curS) done = done.filter(v=> (v.servicesProvided||v.service||v.purpose)===curS);
+  if(pay) done = done.filter(v=> payOf(v)===pay);
+  const total = done.reduce((s,v)=>s+(v.finalCharges??v.charges??0),0);
+  const paid = done.reduce((s,v)=>s+(v.amountPaid||0),0);
+  g('vd-summary').innerHTML = [
+    ['Completed visits', done.length],
+    ['Total charges', fmtMoney(total)],
+    ['Collected', fmtMoney(paid)],
+    ['Pending', fmtMoney(Math.max(0,total-paid))]
+  ].map(([l,v])=>`<div class="card" style="padding:12px 14px;"><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;">${l}</div><div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--ink);">${v}</div></div>`).join('');
+  const groups = {};
+  done.forEach(v=>{ (groups[dOf(v)] = groups[dOf(v)]||[]).push(v); });
+  const dates = Object.keys(groups).sort().reverse();
+  const wrap = g('vd-list');
+  if(!dates.length){ wrap.innerHTML = emptyMsg('No completed site visits match these filters.'); return; }
+  const payColor = {Paid:'var(--green)', Partial:'#D9860F', Unpaid:'var(--red)'};
+  wrap.innerHTML = dates.map(d=>`
+    <div class="day-group">
+      <div class="day-group-label"><span>${fmtDate(new Date(d).getTime())}</span><span>${groups[d].length} completed · ${fmtMoney(groups[d].reduce((s,v)=>s+(v.finalCharges??v.charges??0),0))}</span></div>
+      ${groups[d].map(v=>{
+        const tech = teamMember(v.technicianId);
+        const ch = v.finalCharges??v.charges??0, pd = v.amountPaid||0, ps = payOf(v);
+        return `<div class="visit-card detail">
+          <div class="visit-left" style="align-items:flex-start;flex:1;min-width:260px;">
+            <div class="visit-time" style="background:var(--green);">${v.completedTime||v.time||'—'}</div>
+            <div style="flex:1;">
+              <div class="cell-name">${escapeHtml(v.leadName)} <span class="badge" style="background:${hex2soft(payColor[ps])};color:${payColor[ps]};margin-left:4px;">${ps}</span></div>
+              <div class="cell-sub">${escapeHtml(v.servicesProvided||v.service||v.purpose)} · ${escapeHtml(v.purpose)}</div>
+              <div class="vd-grid">
+                <div>Technician: <b>${tech?escapeHtml(tech.name):'—'}</b></div>
+                <div>Scheduled: <b>${fmtDate(new Date(v.date).getTime())} ${v.time||''}</b></div>
+                <div>Charges: <b>${fmtMoney(ch)}</b></div>
+                <div>Received: <b>${fmtMoney(pd)}</b>${v.paymentMethod?' ('+escapeHtml(v.paymentMethod)+')':''}</div>
+                <div>Balance: <b>${fmtMoney(Math.max(0,ch-pd))}</b></div>
+                <div>Address: <b>${escapeHtml(v.address||v.leadArea||'—')}</b></div>
+                <div>Phone: <b>${escapeHtml(v.leadPhone||'—')}</b></div>
+                ${v.materials?`<div>Materials: <b>${escapeHtml(v.materials)}</b></div>`:''}
+              </div>
+              ${v.completionNotes?`<div style="font-size:12px;margin-top:6px;color:var(--ink);">📝 ${escapeHtml(v.completionNotes)}</div>`:''}
+            </div>
+          </div>
+          <div class="visit-actions">
+            ${ps!=='Paid' ? `<button class="btn btn-green btn-sm vd-pay-btn" data-id="${v.id}">Record payment</button>`:''}
+          </div>
+        </div>`;}).join('')}
+    </div>`).join('');
+  wrap.querySelectorAll('.vd-pay-btn').forEach(b=> b.addEventListener('click', ()=>{
+    const v = state.visits.find(x=>x.id===parseInt(b.dataset.id));
+    const ch = v.finalCharges??v.charges??0;
+    const amt = parseFloat(prompt('Amount received (PKR):', String(Math.max(0, ch-(v.amountPaid||0)))));
+    if(!amt || amt<=0) return;
+    v.amountPaid = (v.amountPaid||0) + amt;
+    v.paymentStatus = v.amountPaid>=ch ? 'Paid' : 'Partial';
+    const lead = state.leads.find(l=>l.id===v.leadId);
+    if(lead){ lead.payments = lead.payments||[]; lead.payments.push({amount:amt, method:v.paymentMethod||'Cash', date:Date.now()}); }
+    saveState(); renderVisitsDone(); toast('Payment recorded');
+  }));
+}
+['vd-search','vd-from','vd-to','vd-tech','vd-service','vd-pay'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', renderVisitsDone); el.addEventListener('change', renderVisitsDone);
 });
 
 /* ============================= QUOTES ============================= */
@@ -2988,6 +3299,7 @@ function renderReports(){
 
 /* ============================= TEAM ============================= */
 function renderTeam(){
+  renderLogins();
   const wrap = document.getElementById('team-list');
   wrap.innerHTML = state.team.map(t=>{
     const leadCount = state.leads.filter(l=>l.assignedTo===t.id).length;
@@ -3023,6 +3335,95 @@ document.getElementById('btn-add-team').addEventListener('click', ()=>{
   toast(`${name} added to the team`);
 });
 
+/* ============================= TEAM LOGINS ============================= */
+const FEATURE_LABELS = {dashboard:'Dashboard',leads:'Leads',visits:'Site Visits Assigned',visitsdone:'Site Visits Completed',tasks:'Tasks',quotes:'Quotes',invoices:'Invoices',bookings:'Bookings',inventory:'Inventory',expenses:'Expenses',finance:'Finance',reports:'Reports',import:'Import & Sync',settings:'Settings'};
+let teamLogins = [];
+function defaultPerms(role){ return Object.keys(FEATURE_LABELS).filter(k=> (NAV_ROLES[k]||['Admin']).includes(role)); }
+function renderPermBoxes(perms){
+  document.getElementById('lg-perms').innerHTML = Object.entries(FEATURE_LABELS).map(([k,l])=>
+    `<label><input type="checkbox" value="${k}" ${perms.includes(k)?'checked':''}> ${l}</label>`).join('');
+}
+function resetLoginForm(){
+  document.getElementById('lg-userid').value = '';
+  document.getElementById('lg-title').textContent = 'Create login';
+  document.getElementById('btn-save-login').textContent = 'Create login';
+  document.getElementById('btn-cancel-login').style.display = 'none';
+  document.getElementById('lg-email').disabled = false;
+  document.getElementById('lg-member').disabled = false;
+  document.getElementById('lg-email').value = ''; document.getElementById('lg-pass').value = '';
+  document.getElementById('lg-pass-hint').textContent = '(min 6 characters)';
+  const m = teamMember(parseInt(document.getElementById('lg-member').value));
+  const role = m ? m.role : 'Technician';
+  document.getElementById('lg-role').value = role;
+  renderPermBoxes(defaultPerms(role));
+}
+async function renderLogins(){
+  const sess = window.__session;
+  const memberSel = document.getElementById('lg-member');
+  memberSel.innerHTML = state.team.map(t=>`<option value="${t.id}">${escapeHtml(t.name)} — ${t.role}</option>`).join('');
+  if(sess && !sess.isAdmin){ document.getElementById('login-list').innerHTML = '<div class="cell-sub">Only the admin can manage logins.</div>'; return; }
+  if(!document.getElementById('lg-userid').value) resetLoginForm();
+  const r = await window.teamApi.rpc('list');
+  if(!r || !r.ok){ document.getElementById('login-list').innerHTML = `<div class="cell-sub">Could not load logins: ${escapeHtml((r&&r.error)||'')}</div>`; return; }
+  teamLogins = r.data || [];
+  document.getElementById('login-list').innerHTML = teamLogins.length ? teamLogins.map(a=>`
+    <div class="team-card">
+      <div style="flex:1;min-width:140px;">
+        <div class="cell-name">${escapeHtml(a.display_name)} <span class="role-pill" style="margin-left:4px;">${escapeHtml(a.role)}</span></div>
+        <div class="cell-sub">${escapeHtml(a.email)}</div>
+        <div class="cell-sub" style="margin-top:2px;">Can see: ${(a.permissions||[]).map(k=>FEATURE_LABELS[k]||k).join(', ')||'nothing'}</div>
+      </div>
+      <button class="btn btn-outline btn-sm lg-edit" data-id="${a.user_id}">Edit access</button>
+      <button class="btn btn-ghost btn-sm lg-del" data-id="${a.user_id}">Remove login</button>
+    </div>`).join('') : '<div class="cell-sub">No team logins yet. Create one on the right.</div>';
+  document.querySelectorAll('.lg-edit').forEach(b=> b.addEventListener('click', ()=>{
+    const a = teamLogins.find(x=>x.user_id===b.dataset.id); if(!a) return;
+    document.getElementById('lg-userid').value = a.user_id;
+    document.getElementById('lg-title').textContent = 'Edit access — '+a.display_name;
+    document.getElementById('btn-save-login').textContent = 'Save access';
+    document.getElementById('btn-cancel-login').style.display = '';
+    document.getElementById('lg-email').value = a.email; document.getElementById('lg-email').disabled = true;
+    if(a.team_member_id) memberSel.value = a.team_member_id;
+    memberSel.disabled = true;
+    document.getElementById('lg-pass').value = '';
+    document.getElementById('lg-pass-hint').textContent = '(leave empty to keep current password)';
+    document.getElementById('lg-role').value = a.role;
+    renderPermBoxes(a.permissions||[]);
+  }));
+  document.querySelectorAll('.lg-del').forEach(b=> b.addEventListener('click', async ()=>{
+    if(!confirm('Remove this login? The person will no longer be able to sign in.')) return;
+    const res = await window.teamApi.rpc('delete', {userId: b.dataset.id});
+    if(res && res.ok){ toast('Login removed','info'); renderLogins(); } else toast((res&&res.error)||'Failed','error');
+  }));
+}
+document.getElementById('lg-member').addEventListener('change', ()=>{ if(!document.getElementById('lg-userid').value) resetLoginForm(); });
+document.getElementById('lg-role').addEventListener('change', e=> renderPermBoxes(defaultPerms(e.target.value)));
+document.getElementById('btn-cancel-login').addEventListener('click', resetLoginForm);
+document.getElementById('btn-save-login').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btn-save-login');
+  const uid = document.getElementById('lg-userid').value;
+  const m = teamMember(parseInt(document.getElementById('lg-member').value));
+  const role = document.getElementById('lg-role').value;
+  const permissions = Array.from(document.querySelectorAll('#lg-perms input:checked')).map(i=>i.value);
+  const password = document.getElementById('lg-pass').value;
+  if(!m){ toast('Add the team member first','info'); return; }
+  btn.disabled = true;
+  let res;
+  if(uid){
+    res = await window.teamApi.rpc('update', {userId: uid, role, permissions, name: m.name, password});
+  } else {
+    const email = document.getElementById('lg-email').value.trim();
+    if(!email || password.length<6){ toast('Enter an email and a password of 6+ characters','info'); btn.disabled=false; return; }
+    res = await window.teamApi.rpc('create', {email, password, name: m.name, role, permissions, teamMemberId: m.id});
+  }
+  btn.disabled = false;
+  if(res && res.ok){
+    if(m.role !== role){ m.role = role; saveState(); renderTeam(); }
+    toast(uid ? 'Access updated' : 'Login created — share the email and password with '+m.name);
+    resetLoginForm(); renderLogins();
+  } else toast((res&&res.error)||'Failed','error');
+});
+
 /* ============================= SETTINGS ============================= */
 function renderSettings(){
   document.getElementById('s-company').value = state.settings.company;
@@ -3052,7 +3453,7 @@ document.getElementById('btn-add-service').addEventListener('click', ()=>{
   saveState(); renderServicesList();
 });
 document.getElementById('btn-save-settings').addEventListener('click', ()=>{
-  state.settings.company = document.getElementById('s-company').value || 'Solar Care CRM';
+  state.settings.company = document.getElementById('s-company').value || 'Flip Power';
   state.settings.phone = document.getElementById('s-phone').value;
   state.settings.address = document.getElementById('s-address').value;
   state.settings.cc = document.getElementById('s-cc').value;
@@ -3083,7 +3484,7 @@ document.getElementById('btn-backup-data').addEventListener('click', async ()=>{
     __type: 'solar-care-crm-backup',
     version: 1,
     exportedAt: new Date().toISOString(),
-    company: (state.settings && state.settings.company) || 'Solar Care CRM',
+    company: (state.settings && state.settings.company) || 'Flip Power',
     data: {
       leads: state.leads || [],
       quotes: state.quotes || [],
@@ -3743,8 +4144,30 @@ function renderInventory(){
   if(el){ el.addEventListener('input', renderInventory); el.addEventListener('change', renderInventory); }
 });
 
+const INVENTORY_PIN = '1971';
+let invUnlockedUntil = 0, pinCallback = null;
+function requireInvPin(cb){
+  if(Date.now() < invUnlockedUntil){ cb(); return; }
+  pinCallback = cb;
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-err').style.display = 'none';
+  openModal('modal-pin');
+  setTimeout(()=>document.getElementById('pin-input').focus(), 50);
+}
+function submitPin(){
+  if(document.getElementById('pin-input').value === INVENTORY_PIN){
+    invUnlockedUntil = Date.now() + 5*60*1000;
+    closeModal('modal-pin');
+    const cb = pinCallback; pinCallback = null; if(cb) cb();
+  } else {
+    document.getElementById('pin-err').style.display = '';
+  }
+}
+document.getElementById('btn-pin-ok').addEventListener('click', submitPin);
+document.getElementById('pin-input').addEventListener('keydown', e=>{ if(e.key==='Enter') submitPin(); });
 let editingProductId = null;
-function openProductModal(pid){
+function openProductModal(pid){ requireInvPin(()=> openProductModalInner(pid)); }
+function openProductModalInner(pid){
   editingProductId = pid || null;
   const p = pid ? state.inventory.find(x=>x.id===pid) : null;
   document.getElementById('prod-modal-title').textContent = p ? 'Edit product' : 'Add product';
@@ -4140,9 +4563,11 @@ document.addEventListener('click', (ev)=>{
 /* ============================= INIT ============================= */
 async function init(){
   document.getElementById('brand-logo-img').src = LOGO_DATA_URI;
+  try{ window.__session = await window.crmSession(); }catch(e){ window.__session = null; }
   const had = await loadState();
   if(!had || !state.leads.length || !state.team.length){
     seedData();
+    trimSampleData();
     await saveState();
   }
   if(!state.tasks) state.tasks = [];
@@ -4192,6 +4617,19 @@ async function init(){
     }catch(e){ console.error('inventory backfill failed', e); }
   }
   document.querySelector('.brand-text .name').textContent = state.settings.company;
+  const sess = window.__session;
+  if(sess && !sess.isAdmin){
+    window.__adminUserId = state.currentUserId;
+    let me = sess.teamMemberId ? teamMember(sess.teamMemberId) : null;
+    if(!me){
+      me = {id: state.nextTeamId++, name: sess.name||'Team member', role: sess.role, phone:'', color:'#2E9E6D'};
+      state.team.push(me);
+    }
+    state.currentUserId = me.id;
+    sess.teamMemberId = me.id;
+    const selEl = document.getElementById('viewing-as-select');
+    selEl.disabled = true;
+  }
   renderViewingAs();
   renderDashboard();
   renderLeads();
