@@ -2519,6 +2519,7 @@ function renderVisitsDone(){
             </div>
           </div>
           <div class="visit-actions">
+            ${v.paymentProof ? `<button class="btn btn-outline btn-sm vd-proof-btn" data-id="${v.id}">View proof</button>`:''}
             ${ps!=='Paid' ? `<button class="btn btn-green btn-sm vd-pay-btn" data-id="${v.id}">Record payment</button>`:''}
           </div>
         </div>`;}).join('')}
@@ -4507,7 +4508,19 @@ function compressImageFile(file, maxDim, quality){
   });
 }
 
+let __visitProof = '';
 document.addEventListener('change', async (ev)=>{
+  if(ev.target && ev.target.id === 'vc-file'){
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    try{
+      const dataUrl = await compressImageFile(f, 1400, 0.78);
+      __visitProof = dataUrl;
+      document.getElementById('vc-preview').innerHTML =
+        `<img src="${dataUrl}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--line);"><div style="margin-top:6px;"><button class="btn btn-outline btn-sm" type="button" onclick="document.getElementById('vc-file').value='';document.getElementById('vc-preview').innerHTML='';window.__clearVisitProof&&window.__clearVisitProof();">Remove screenshot</button></div>`;
+    }catch(e){ toast('Could not read image', 'info'); }
+    return;
+  }
   if(ev.target && ev.target.id === 'ex-file'){
     const f = ev.target.files && ev.target.files[0];
     if(!f) return;
