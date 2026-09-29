@@ -1091,6 +1091,7 @@ tbody tr:hover{background:var(--paper-2);}
   <div class="modal-body">
     <div class="field-grid">
       <div class="field" style="grid-column:1/-1;"><label>Client / Lead</label><select id="v-lead"></select></div>
+      <div class="field" id="v-manual-wrap" style="grid-column:1/-1;display:none;"><label>Client name</label><input id="v-manual-name" placeholder="Name of the person who contacted you (e.g. via WhatsApp)"></div>
       <div class="field"><label>Visit date</label><input id="v-date" type="date"></div>
       <div class="field"><label>Time</label><input id="v-time" type="time" value="11:00"></div>
       <div class="field"><label>Technician</label><select id="v-tech"></select></div>
@@ -2252,7 +2253,7 @@ function populateVisitFilters(){
   const cur = tech.value;
   tech.innerHTML = '<option value="">All technicians</option>' + opts; tech.value = cur;
   const vLead = document.getElementById('v-lead');
-  vLead.innerHTML = state.leads.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} — ${escapeHtml(l.area||'—')}</option>`).join('');
+  vLead.innerHTML = '<option value="manual">— New client (not in leads) —</option>' + state.leads.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} — ${escapeHtml(l.area||'—')}</option>`).join('');
   document.getElementById('v-tech').innerHTML = '<option value="">— Unassigned —</option>' + opts;
   document.getElementById('v-service-list').innerHTML = (state.settings.services||[]).map(x=>`<option value="${escapeHtml(x)}">`).join('');
 }
@@ -2337,7 +2338,11 @@ document.getElementById('filter-visit-tech').addEventListener('change', renderVi
 let visitLockedLead = null, editingVisitId = null;
 function fillVisitFromLead(){
   if(editingVisitId) return;
-  const l = state.leads.find(x=>x.id===parseInt(document.getElementById('v-lead').value));
+  const sel = document.getElementById('v-lead').value;
+  const manual = sel==='manual';
+  document.getElementById('v-manual-wrap').style.display = manual?'':'none';
+  if(manual){ document.getElementById('v-phone').value=''; document.getElementById('v-address').value=''; return; }
+  const l = state.leads.find(x=>x.id===parseInt(sel));
   if(!l) return;
   document.getElementById('v-phone').value = l.phone||'';
   document.getElementById('v-address').value = l.area||'';
@@ -2352,13 +2357,18 @@ function openVisitModal(lead, visit){
   document.getElementById('btn-save-visit').textContent = visit ? 'Save changes' : 'Assign visit';
   const g = id=>document.getElementById(id);
   if(visit){
-    g('v-lead').value = visit.leadId; g('v-date').value = visit.date; g('v-time').value = visit.time;
+    const manualVisit = !visit.leadId;
+    g('v-lead').value = manualVisit ? 'manual' : visit.leadId;
+    g('v-manual-wrap').style.display = manualVisit?'':'none';
+    g('v-manual-name').value = manualVisit ? (visit.leadName||'') : '';
+    g('v-date').value = visit.date; g('v-time').value = visit.time;
     g('v-tech').value = visit.technicianId||''; g('v-purpose').value = visit.purpose;
     g('v-service').value = visit.service||''; g('v-charges').value = visit.charges||'';
     g('v-phone').value = visit.leadPhone||''; g('v-address').value = visit.address||visit.leadArea||'';
     g('v-notes').value = visit.notes||'';
   } else {
     if(lead) g('v-lead').value = lead.id;
+    g('v-manual-name').value = '';
     g('v-date').value = dayOffset(1); g('v-time').value = '11:00';
     g('v-notes').value = ''; g('v-service').value=''; g('v-charges').value='';
     fillVisitFromLead();
@@ -2368,8 +2378,14 @@ function openVisitModal(lead, visit){
 document.getElementById('btn-new-visit').addEventListener('click', ()=> openVisitModal(null));
 document.getElementById('btn-save-visit').addEventListener('click', ()=>{
   const g = id=>document.getElementById(id).value;
-  const lead = state.leads.find(l=>l.id===parseInt(g('v-lead')));
-  if(!lead){ toast('Choose a client', 'info'); return; }
+  const sel = g('v-lead');
+  const manual = sel==='manual';
+  let lead = state.leads.find(l=>l.id===parseInt(sel));
+  if(manual){
+    const nm = g('v-manual-name').trim();
+    if(!nm){ toast('Enter the client name', 'info'); return; }
+    lead = {id:null, name:nm, phone:'', area:''};
+  } else if(!lead){ toast('Choose a client', 'info'); return; }
   const data = {
     leadId: lead.id, leadName: lead.name,
     leadPhone: g('v-phone').trim() || lead.phone, leadArea: lead.area,
@@ -2385,8 +2401,10 @@ document.getElementById('btn-save-visit').addEventListener('click', ()=>{
   } else {
     const visit = mkVisit(lead, data.date, data.time, data.technicianId, data.purpose, data.notes, 'Assigned', data);
     state.visits.push(visit);
-    lead.history.push({ts:Date.now(), type:'note', note:`Site visit assigned: ${data.service||data.purpose} on ${fmtDate(new Date(data.date).getTime())} at ${data.time}${tech?' · '+tech.name:''}`});
-    if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+    if(lead.id){
+      lead.history.push({ts:Date.now(), type:'note', note:`Site visit assigned: ${data.service||data.purpose} on ${fmtDate(new Date(data.date).getTime())} at ${data.time}${tech?' · '+tech.name:''}`});
+      if(lead.stage==='new' || lead.stage==='contacted') setLeadStage(lead.id, 'site_visit', true);
+    }
     toast('Site visit assigned' + (tech? ' to '+tech.name : ''));
   }
   saveState(); closeModal('modal-visit'); renderVisits(); renderDashboard();
