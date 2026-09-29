@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "595fc7be-5fc2-41a7-b5bf-69f874f0d80d",
-  "project_id": "9025e4e1-9e56-4528-b829-7625b04ecf25",
-  "url": "/__l5e/assets-v1/595fc7be-5fc2-41a7-b5bf-69f874f0d80d/flip-power-logo.png",
-  "r2_key": "a/v1/9025e4e1-9e56-4528-b829-7625b04ecf25/595fc7be-5fc2-41a7-b5bf-69f874f0d80d/flip-power-logo.png",
-  "original_filename": "flip-power-logo.png",
-  "size": 38859,
   "content_type": "image/png",
-  "created_at": "2026-09-29T16:15:16Z"
+  "created_at": "2026-09-29T16:15:16Z",
+  "original_filename": "flip-power-logo.png",
+  "project_id": "833dfad4-0a0c-4786-99a2-52d79dc04db5",
+  "r2_key": "a/v1/833dfad4-0a0c-4786-99a2-52d79dc04db5/595fc7be-5fc2-41a7-b5bf-69f874f0d80d/flip-power-logo.png",
+  "size": 38859,
+  "url": "/__l5e/assets-v1/595fc7be-5fc2-41a7-b5bf-69f874f0d80d/flip-power-logo.png",
+  "version": 1
 }
