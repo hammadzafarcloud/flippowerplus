@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- All CRM business data belongs to the workspace owner; team accounts access that shared workspace according to their assigned page permissions, so records remain consistent across logins.

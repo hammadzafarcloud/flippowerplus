@@ -181,9 +181,16 @@ a{color:inherit;}
   padding:1px 6px;border-radius:20px;
 }
 .sidebar-foot{
-  margin-top:auto;padding-top:14px;border-top:1px solid var(--line-dark);
+  margin-top:auto;padding-top:10px;border-top:1px solid var(--line-dark);
   font-size:11px;color:#6C7A90;font-family:var(--font-mono);
 }
+.sidebar-signout{
+  display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;margin-bottom:9px;
+  border:0;border-radius:8px;background:transparent;color:#C6CCD8;font:600 13px var(--font-body);
+  cursor:pointer;text-align:left;
+}
+.sidebar-signout:hover{background:var(--navy-2);color:#fff;}
+.sidebar-signout svg{width:17px;height:17px;flex-shrink:0;}
 .sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;box-shadow:0 0 0 3px rgba(46,158,109,0.2);}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column;}
@@ -579,7 +586,11 @@ tbody tr:hover{background:var(--paper-2);}
       </button>
     </nav>
     <div class="sidebar-foot">
-      <span class="sync-dot"></span>Website &amp; Facebook sync active
+      <button class="sidebar-signout" id="btn-sign-out" title="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a2 2 0 012 2v12a2 2 0 01-2 2h-5"/></svg>
+        Sign out
+      </button>
+      <div><span class="sync-dot"></span>Website &amp; Facebook sync active</div>
     </div>
   </aside>
 
@@ -1282,12 +1293,6 @@ tbody tr:hover{background:var(--paper-2);}
 <div id="print-area"></div>
 <div id="toast-wrap"></div>
 
-<!-- ASK YOUR CRM: floating button -->
-<button id="btn-ask-ai" title="Ask your CRM"
-  style="position:fixed;bottom:22px;left:22px;z-index:90;background:linear-gradient(135deg,#F5B841,#E89923);color:#1a1a1a;border:none;border-radius:999px;padding:12px 18px;font-weight:700;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;gap:8px;">
-  ✨ Ask your CRM
-</button>
-
 <script>
 (function(){
 
@@ -1384,6 +1389,12 @@ async function loadState(){
 function trimSampleData(){
   state.flags = state.flags || {};
   let changed = false;
+  const defaultAdmin = (state.team||[]).find(t=>t.name==='Bilal Ahmed' && t.role==='Admin' && t.phone==='923001234567');
+  if(defaultAdmin){
+    defaultAdmin.name = 'Hammad Zafar';
+    defaultAdmin.phone = '0300 1394 008';
+    changed = true;
+  }
   (state.visits||[]).forEach(v=>{ if(v.status==='Scheduled'){ v.status='Assigned'; changed = true; } });
   if(state.flags.sampleTrimV1) return changed;
   state.flags.sampleTrimV1 = true;
@@ -1416,7 +1427,7 @@ function seedData(){
   const now = Date.now();
 
   state.team = [
-    {id: state.nextTeamId++, name:'Bilal Ahmed', role:'Admin', phone:'923001234567', color:'#3B6FA6'},
+    {id: state.nextTeamId++, name:'Hammad Zafar', role:'Admin', phone:'0300 1394 008', color:'#3B6FA6'},
     {id: state.nextTeamId++, name:'Ayesha Raza', role:'Sales Executive', phone:'923011234567', color:'#8A6FD1'},
     {id: state.nextTeamId++, name:'Hamza Tariq', role:'Sales Executive', phone:'923021234567', color:'#D9860F'},
     {id: state.nextTeamId++, name:'Usman Farooq', role:'Technician', phone:'923031234567', color:'#2E9E6D'},
@@ -1730,6 +1741,9 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
 });
 document.getElementById('hamburger').addEventListener('click', ()=>{
   document.getElementById('sidebar').classList.toggle('show');
+});
+document.getElementById('btn-sign-out').addEventListener('click', ()=>{
+  window.parent.postMessage({__crmSignOut:true}, '*');
 });
 
 /* ============================= DASHBOARD ============================= */
@@ -3939,14 +3953,6 @@ function renderAskChat(){
   document.getElementById('ask-clear').addEventListener('click', ()=>{ window.__askHistory = []; renderAskChat(); });
   setTimeout(()=>input.focus(), 50);
 }
-
-document.getElementById('btn-ask-ai').addEventListener('click', ()=>{
-  openAiModal('✨ Ask your CRM');
-  renderAskChat();
-});
-
-
-
 
 function renderTasks(){
   if(!state.tasks) state.tasks = [];
